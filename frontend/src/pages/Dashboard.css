@@ -1,0 +1,45 @@
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.stats-grid article,
+.chart-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+.stats-grid span {
+  color: var(--color-text-muted);
+}
+
+.stats-grid strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 30px;
+}
+
+.chart-panel h2 {
+  margin: 0 0 12px;
+}
+
+.chart-panel svg {
+  width: 100%;
+  height: auto;
+}
+
+.chart-panel text {
+  fill: var(--color-text);
+  font-size: 16px;
+}
+
+@media (max-width: 720px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,68 @@
+.task-card {
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 12px 12px 20px;
+}
+
+.task-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: var(--radius) 0 0 var(--radius);
+  background: var(--color-primary);
+}
+
+.task-card.priority-high::before {
+  background: var(--color-danger);
+}
+
+.task-card.priority-medium::before {
+  background: var(--color-warning);
+}
+
+.task-card.priority-low::before {
+  background: var(--color-success);
+}
+
+.task-card h3 {
+  margin: 0 0 7px;
+  font-size: 15px;
+}
+
+.task-card p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.task-meta span {
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.task-drag {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background-image: radial-gradient(var(--color-text-muted) 1px, transparent 1px);
+  background-size: 6px 6px;
+  cursor: grab;
+}
