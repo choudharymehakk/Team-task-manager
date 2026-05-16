@@ -17,6 +17,7 @@ import ProjectDetail from "./pages/ProjectDetail.jsx";
 import TaskDetail from "./pages/TaskDetail.jsx";
 import Tasks from "./pages/Tasks.jsx";
 import Team from "./pages/Team.jsx";
+import Settings from "./pages/Settings.jsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,6 +39,7 @@ function AppLayout() {
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/tasks/:id" element={<TaskDetail />} />
           <Route path="/team" element={<Team />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AppShell>

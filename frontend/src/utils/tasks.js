@@ -10,9 +10,28 @@ export function isAssignedTo(task, userId) {
 
 export function memberLabel(userId, users = []) {
   const user = users.find((item) => item.id === userId);
-  if (user?.username) return user.username;
-  if (user?.email) return user.email;
-  return userId ? `User ${userId.slice(-6)}` : "Unassigned";
+  const label = displayUserName(user);
+  if (label !== "Unknown User") return label;
+  return userId ? "Unknown User" : "Unassigned";
+}
+
+export function memberEmail(userId, users = []) {
+  return users.find((item) => item.id === userId)?.email || "";
+}
+
+export function displayUserName(user) {
+  return user?.full_name || user?.username || user?.email || "Unknown User";
+}
+
+export function initialsForUser(user) {
+  const source = displayUserName(user);
+  return source
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "?";
 }
 
 export function isOverdue(task) {

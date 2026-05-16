@@ -23,6 +23,7 @@ async def with_author(comment: Comment) -> CommentOut:
         task_id=comment.task_id,
         author_id=comment.author_id,
         author_username=author.username if author else None,
+        author_full_name=author.full_name if author else None,
         created_at=comment.created_at,
     )
 

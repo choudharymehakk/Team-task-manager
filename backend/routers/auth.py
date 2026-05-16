@@ -40,15 +40,31 @@ def issue_tokens(user: User) -> Token:
     return Token(access_token=access, refresh_token=refresh)
 
 
+async def unique_username(email: str, requested: str | None = None) -> str:
+    base = (requested or email.split("@")[0]).strip().lower().replace(" ", "_")
+    base = "".join(char for char in base if char.isalnum() or char in {"_", "-"})
+    if len(base) < 3:
+        base = "user"
+    candidate = base[:40]
+    suffix = 1
+    while await User.find_one(User.username == candidate):
+        suffix_text = str(suffix)
+        candidate = f"{base[:40 - len(suffix_text) - 1]}_{suffix_text}"
+        suffix += 1
+    return candidate
+
+
 @router.post("/signup", response_model=UserOut, status_code=201)
 async def signup(payload: UserCreate) -> User:
     if await User.find_one(User.email == payload.email):
         raise HTTPException(status_code=409, detail="Email is already registered")
-    if await User.find_one(User.username == payload.username):
+    if payload.username and await User.find_one(User.username == payload.username):
         raise HTTPException(status_code=409, detail="Username is already taken")
     user = User(
         email=payload.email,
-        username=payload.username,
+        username=await unique_username(str(payload.email), payload.username),
+        full_name=payload.full_name.strip(),
+        avatar_url=payload.avatar_url,
         hashed_password=get_password_hash(payload.password),
         role=payload.role,
     )

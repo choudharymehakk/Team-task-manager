@@ -4,12 +4,11 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "../api/hooks/useAuth.js";
-import { useProjects } from "../api/hooks/useProjects.js";
+import { useAllProjectMembers, useProjects } from "../api/hooks/useProjects.js";
 import { useAllProjectTasks } from "../api/hooks/useTasks.js";
 import { useCreateUser, useDeleteUser, useUsers } from "../api/hooks/useUsers.js";
 import Modal from "../components/Modal.jsx";
-import { getMembersFromProjects, shortMemberLabel } from "../utils/analytics.js";
-import { assigneeIds } from "../utils/tasks.js";
+import { assigneeIds, displayUserName, initialsForUser } from "../utils/tasks.js";
 
 function userStats(userId, projects, tasks) {
   const assigned = tasks.filter((task) => assigneeIds(task).includes(userId));
@@ -28,9 +27,10 @@ export default function Team() {
   const isAdmin = user?.role === "admin";
   const [query, setQuery] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({ email: "", username: "", password: "", role: "member" });
+  const [form, setForm] = useState({ full_name: "", email: "", password: "", role: "member" });
   const projects = useProjects();
   const { tasks, isLoading } = useAllProjectTasks(projects.data || []);
+  const projectMembers = useAllProjectMembers(projects.data || []);
   const users = useUsers(isAdmin);
   const createUser = useCreateUser();
   const deleteUser = useDeleteUser();
@@ -39,33 +39,26 @@ export default function Team() {
     if (isAdmin) {
       return (users.data || []).map((item) => ({
         ...item,
-        displayName: item.username,
+        displayName: displayUserName(item),
         ...userStats(item.id, projects.data || [], tasks)
       }));
     }
-    return getMembersFromProjects(projects.data || [], tasks).map((item) => ({
-      id: item.id,
-      username: item.displayName,
-      email: item.id,
-      role: item.role.toLowerCase(),
-      displayName: item.displayName,
-      projectCount: item.projectCount,
-      assignedTasks: item.assignedTasks,
-      completedTasks: item.completedTasks,
-      pendingTasks: item.pendingTasks,
-      completionPct: item.completionPct
+    return (projectMembers.members || []).map((item) => ({
+      ...item,
+      displayName: displayUserName(item),
+      ...userStats(item.id, projects.data || [], tasks)
     }));
-  }, [isAdmin, users.data, projects.data, tasks]);
+  }, [isAdmin, users.data, projectMembers.members, projects.data, tasks]);
 
   const filtered = rows.filter((item) =>
-    `${item.username} ${item.email} ${item.id}`.toLowerCase().includes(query.toLowerCase())
+    `${displayUserName(item)} ${item.email || ""} ${item.role || ""}`.toLowerCase().includes(query.toLowerCase())
   );
 
   async function submit(event) {
     event.preventDefault();
     await createUser.mutateAsync(form);
     toast.success("User added successfully");
-    setForm({ email: "", username: "", password: "", role: "member" });
+    setForm({ full_name: "", email: "", password: "", role: "member" });
     setModalOpen(false);
   }
 
@@ -91,20 +84,20 @@ export default function Team() {
 
       <div className="mt-6 relative max-w-xl">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-        <input className="input-premium pl-10" placeholder="Search users..." value={query} onChange={(event) => setQuery(event.target.value)} />
+        <input className="input-premium pl-10" placeholder="Search by name, email, or role..." value={query} onChange={(event) => setQuery(event.target.value)} />
       </div>
 
       <section className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {(users.isLoading || projects.isLoading || isLoading) && Array.from({ length: 6 }).map((_, index) => <div className="skeleton h-48" key={index} />)}
-        {!users.isLoading && !isLoading && filtered.map((item) => (
+        {(users.isLoading || projectMembers.isLoading || projects.isLoading || isLoading) && Array.from({ length: 6 }).map((_, index) => <div className="skeleton h-48" key={index} />)}
+        {!users.isLoading && !projectMembers.isLoading && !isLoading && filtered.map((item) => (
           <motion.article whileHover={{ y: -4 }} className="premium-card p-5" key={item.id}>
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-slate-950 text-sm font-black text-white">
-                  {(item.username || shortMemberLabel(item.id)).slice(0, 2).toUpperCase()}
+                  {initialsForUser(item)}
                 </div>
                 <div className="min-w-0">
-                  <h2 className="truncate font-black text-slate-950">{item.username || shortMemberLabel(item.id)}</h2>
+                  <h2 className="truncate font-black text-slate-950">{displayUserName(item)}</h2>
                   <p className="truncate text-xs text-slate-500">{item.email}</p>
                 </div>
               </div>
@@ -144,7 +137,7 @@ export default function Team() {
         ))}
       </section>
 
-      {!users.isLoading && !projects.isLoading && !isLoading && !filtered.length && (
+      {!users.isLoading && !projectMembers.isLoading && !projects.isLoading && !isLoading && !filtered.length && (
         <div className="mt-8 grid place-items-center rounded-[2rem] border border-dashed border-slate-300 bg-white/70 p-12 text-center">
           <Users className="text-indigo-500" size={42} />
           <h2 className="mt-4 text-xl font-black">{isAdmin ? "No users found" : "No collaborators yet"}</h2>
@@ -155,8 +148,8 @@ export default function Team() {
       {modalOpen && (
         <Modal title="Add user" onClose={() => setModalOpen(false)}>
           <form className="grid gap-4" onSubmit={submit}>
+            <label className="grid gap-2"><span className="label-premium">Full name</span><input className="input-premium" value={form.full_name} onChange={(event) => setForm({ ...form, full_name: event.target.value })} /></label>
             <label className="grid gap-2"><span className="label-premium">Email</span><input className="input-premium" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></label>
-            <label className="grid gap-2"><span className="label-premium">Username</span><input className="input-premium" value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} /></label>
             <label className="grid gap-2"><span className="label-premium">Temporary password</span><input className="input-premium" type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} /></label>
             <label className="grid gap-2">
               <span className="label-premium">Role</span>

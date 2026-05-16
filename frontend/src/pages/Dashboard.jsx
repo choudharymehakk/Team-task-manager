@@ -29,7 +29,7 @@ import {
   upcomingDeadlines
 } from "../utils/analytics.js";
 import { relativeTime } from "../utils/relativeTime.js";
-import { assigneeIds, isDueSoon } from "../utils/tasks.js";
+import { assigneeIds, displayUserName, initialsForUser, isDueSoon } from "../utils/tasks.js";
 
 function EmptyState({ icon: Icon, title, body }) {
   return (
@@ -104,14 +104,14 @@ export default function Dashboard() {
     const base = users.data?.length
       ? users.data.map((item) => ({
           id: item.id,
-          displayName: item.username,
+          displayName: displayUserName(item),
           email: item.email,
           role: item.role
         }))
       : knownMembers.map((item) => ({
           id: item.id,
-          displayName: item.displayName,
-          email: item.id,
+          displayName: "Unknown User",
+          email: "",
           role: item.role
         }));
 
@@ -294,7 +294,7 @@ export default function Dashboard() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
                     <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-slate-950 text-xs font-black text-white">
-                      {member.displayName.slice(0, 2).toUpperCase()}
+                      {initialsForUser({ full_name: member.displayName })}
                     </span>
                     <div className="min-w-0">
                       <p className="truncate font-black text-slate-950">{member.displayName}</p>

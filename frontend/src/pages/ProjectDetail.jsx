@@ -9,8 +9,8 @@ import { useAddMember, useProject, useProjectMembers, useRemoveMember } from "..
 import { useCreateTask, useProjectTasks, useUpdateTask } from "../api/hooks/useTasks.js";
 import KanbanBoard from "../components/KanbanBoard.jsx";
 import Modal from "../components/Modal.jsx";
-import { projectProgress, shortMemberLabel } from "../utils/analytics.js";
-import { assigneeIds } from "../utils/tasks.js";
+import { projectProgress } from "../utils/analytics.js";
+import { assigneeIds, displayUserName } from "../utils/tasks.js";
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -109,7 +109,7 @@ export default function ProjectDetail() {
             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4" key={member.id}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate font-black text-slate-950">{member.username || shortMemberLabel(member.id)}</p>
+                  <p className="truncate font-black text-slate-950">{displayUserName(member)}</p>
                   <p className="truncate text-xs text-slate-500">{member.email}</p>
                 </div>
                 <span className={`rounded-full px-2.5 py-1 text-xs font-bold capitalize ${member.role === "admin" ? "bg-indigo-50 text-indigo-700" : "bg-slate-100 text-slate-600"}`}>
@@ -169,7 +169,7 @@ export default function ProjectDetail() {
                   })}
                 >
                   {members.data?.map((member) => (
-                    <option value={member.id} key={member.id}>{member.username} ({member.email})</option>
+                    <option value={member.id} key={member.id}>{displayUserName(member)} ({member.email})</option>
                   ))}
                 </select>
                 <span className="text-xs text-slate-500">Hold Ctrl or Cmd to select multiple members.</span>

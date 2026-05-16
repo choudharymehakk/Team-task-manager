@@ -13,6 +13,7 @@ import { NavLink } from "react-router-dom";
 import { useState } from "react";
 
 import { useAuth } from "../api/hooks/useAuth.js";
+import { displayUserName } from "../utils/tasks.js";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -79,12 +80,12 @@ function Sidebar({ collapsed, setCollapsed, onNavigate }) {
           {!collapsed ? (
             <>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-500">Workspace</p>
-              <p className="mt-2 text-sm font-bold text-slate-950">{user?.username || "Team member"}</p>
+              <p className="mt-2 text-sm font-bold text-slate-950">{displayUserName(user)}</p>
               <p className="mt-1 text-xs capitalize text-slate-500">{user?.role || "member"} access</p>
             </>
           ) : (
             <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-white text-sm font-black text-indigo-600">
-              {user?.username?.[0]?.toUpperCase() || "U"}
+              {displayUserName(user).slice(0, 1).toUpperCase()}
             </div>
           )}
         </div>
@@ -162,10 +163,10 @@ export default function AppShell({ children }) {
                   onClick={() => setProfileOpen((value) => !value)}
                 >
                   <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 text-sm font-black text-white">
-                    {user?.username?.[0]?.toUpperCase() || "U"}
+                    {displayUserName(user).slice(0, 1).toUpperCase()}
                   </div>
                   <div className="leading-tight text-left">
-                    <p className="text-sm font-bold text-slate-900">{user?.username || "User"}</p>
+                    <p className="text-sm font-bold text-slate-900">{displayUserName(user)}</p>
                     <p className="text-xs capitalize text-slate-500">{user?.role || "member"}</p>
                   </div>
                   <ChevronDown size={16} className="text-slate-400" />
@@ -173,7 +174,7 @@ export default function AppShell({ children }) {
                 {profileOpen && (
                   <div className="absolute right-0 top-14 z-50 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-soft">
                     <div className="rounded-xl px-3 py-2">
-                      <p className="text-sm font-bold text-slate-900">{user?.email || user?.username}</p>
+                      <p className="text-sm font-bold text-slate-900">{user?.email}</p>
                       <p className="text-xs capitalize text-slate-500">{user?.role}</p>
                     </div>
                     <button className="w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50" onClick={logout}>

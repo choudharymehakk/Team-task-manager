@@ -9,7 +9,7 @@ import { useProjectMembers } from "../api/hooks/useProjects.js";
 import { useDeleteTask, useTask, useUpdateTask } from "../api/hooks/useTasks.js";
 import CommentSection from "../components/CommentSection.jsx";
 import AssigneeAvatars from "../components/AssigneeAvatars.jsx";
-import { assigneeIds } from "../utils/tasks.js";
+import { assigneeIds, displayUserName } from "../utils/tasks.js";
 
 export default function TaskDetail() {
   const { id } = useParams();
@@ -114,7 +114,7 @@ export default function TaskDetail() {
                   })}
                 >
                   {members.data?.map((member) => (
-                    <option value={member.id} key={member.id}>{member.username}</option>
+                    <option value={member.id} key={member.id}>{displayUserName(member)} ({member.email})</option>
                   ))}
                 </select>
                 <span className="text-xs text-slate-500">Hold Ctrl or Cmd to select multiple members.</span>

@@ -85,7 +85,7 @@ export function getMembersFromProjects(projects = [], tasks = []) {
     if (project.owner_id) {
       map.set(project.owner_id, {
         id: project.owner_id,
-        displayName: shortMemberLabel(project.owner_id),
+        displayName: "Unknown User",
         role: "Owner",
         projectCount: 0,
         assignedTasks: 0,
@@ -96,7 +96,7 @@ export function getMembersFromProjects(projects = [], tasks = []) {
       if (!map.has(id)) {
         map.set(id, {
           id,
-          displayName: shortMemberLabel(id),
+          displayName: "Unknown User",
           role: id === project.owner_id ? "Owner" : "Member",
           projectCount: 0,
           assignedTasks: 0,
@@ -122,8 +122,4 @@ export function getMembersFromProjects(projects = [], tasks = []) {
   });
 
   return members.sort((a, b) => b.assignedTasks - a.assignedTasks || a.displayName.localeCompare(b.displayName));
-}
-
-export function shortMemberLabel(id = "") {
-  return id ? `User ${id.slice(-6)}` : "User";
 }

@@ -98,7 +98,7 @@ async def list_project_members(
         user = await User.get(parse_object_id(user_id))
         if user is not None:
             users.append(user)
-    return sorted(users, key=lambda user: user.username)
+    return sorted(users, key=lambda user: user.full_name or user.email)
 
 
 @router.delete("/{project_id}/members/{user_id}", response_model=ProjectOut)

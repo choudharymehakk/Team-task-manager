@@ -8,6 +8,8 @@ from pydantic import EmailStr, Field
 class User(Document):
     email: Indexed(EmailStr, unique=True)
     username: Indexed(str, unique=True)
+    full_name: str = ""
+    avatar_url: str | None = None
     hashed_password: str
     role: Literal["admin", "member"] = "member"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

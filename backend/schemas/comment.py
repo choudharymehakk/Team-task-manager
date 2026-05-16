@@ -22,6 +22,7 @@ class CommentOut(BaseModel):
     task_id: PydanticObjectId
     author_id: PydanticObjectId
     author_username: str | None = None
+    author_full_name: str | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True, json_encoders={PydanticObjectId: str})

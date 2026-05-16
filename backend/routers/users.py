@@ -6,6 +6,7 @@ from models.project import Project
 from models.task import Task
 from models.user import User
 from routers.auth import get_password_hash
+from routers.auth import unique_username
 from schemas.user import UserCreate, UserOut
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -13,18 +14,20 @@ router = APIRouter(prefix="/api/users", tags=["users"])
 
 @router.get("", response_model=list[UserOut])
 async def list_users(_: User = Depends(require_admin)) -> list[User]:
-    return await User.find_all().sort("username").to_list()
+    return await User.find_all().sort("full_name").to_list()
 
 
 @router.post("", response_model=UserOut, status_code=201)
 async def create_user(payload: UserCreate, _: User = Depends(require_admin)) -> User:
     if await User.find_one(User.email == payload.email):
         raise HTTPException(status_code=409, detail="Email is already registered")
-    if await User.find_one(User.username == payload.username):
+    if payload.username and await User.find_one(User.username == payload.username):
         raise HTTPException(status_code=409, detail="Username is already taken")
     user = User(
         email=payload.email,
-        username=payload.username,
+        username=await unique_username(str(payload.email), payload.username),
+        full_name=payload.full_name.strip(),
+        avatar_url=payload.avatar_url,
         hashed_password=get_password_hash(payload.password),
         role=payload.role,
     )

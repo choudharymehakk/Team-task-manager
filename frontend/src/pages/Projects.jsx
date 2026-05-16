@@ -10,7 +10,7 @@ import { useUsers } from "../api/hooks/useUsers.js";
 import Modal from "../components/Modal.jsx";
 import ProjectCard from "../components/ProjectCard.jsx";
 import { projectProgress } from "../utils/analytics.js";
-import { assigneeIds, isDueSoon, isOverdue } from "../utils/tasks.js";
+import { assigneeIds, displayUserName, isDueSoon, isOverdue } from "../utils/tasks.js";
 
 const initialFilters = {
   query: "",
@@ -97,7 +97,7 @@ export default function Projects() {
         {user?.role === "admin" && (
           <select className="input-premium" value={filters.assignee} onChange={(event) => setFilter("assignee", event.target.value)}>
             <option value="all">Any assignee</option>
-            {(users.data || []).map((item) => <option value={item.id} key={item.id}>{item.username}</option>)}
+            {(users.data || []).map((item) => <option value={item.id} key={item.id}>{displayUserName(item)}</option>)}
           </select>
         )}
         <select className="input-premium" value={filters.due} onChange={(event) => setFilter("due", event.target.value)}>

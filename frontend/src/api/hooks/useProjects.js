@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../axios.js";
 
 export function useProjects() {
@@ -38,6 +38,25 @@ export function useProjectMembers(projectId) {
     queryFn: async () => (await api.get(`/api/projects/${projectId}/members`)).data,
     enabled: Boolean(projectId)
   });
+}
+
+export function useAllProjectMembers(projects = []) {
+  const queries = useQueries({
+    queries: projects.map((project) => ({
+      queryKey: ["projects", project.id, "members"],
+      queryFn: async () => (await api.get(`/api/projects/${project.id}/members`)).data,
+      enabled: Boolean(project.id)
+    }))
+  });
+  const byId = new Map();
+  queries.forEach((query) => {
+    (query.data || []).forEach((member) => byId.set(member.id, member));
+  });
+  return {
+    members: Array.from(byId.values()).sort((a, b) => (a.full_name || "").localeCompare(b.full_name || "")),
+    isLoading: queries.some((query) => query.isLoading),
+    isError: queries.some((query) => query.isError)
+  };
 }
 
 export function useRemoveMember(projectId) {

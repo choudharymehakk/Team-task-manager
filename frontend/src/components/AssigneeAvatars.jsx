@@ -1,4 +1,4 @@
-import { assigneeIds, memberLabel } from "../utils/tasks.js";
+import { assigneeIds, initialsForUser, memberLabel } from "../utils/tasks.js";
 
 export default function AssigneeAvatars({ task, users = [], max = 4 }) {
   const ids = assigneeIds(task);
@@ -18,7 +18,7 @@ export default function AssigneeAvatars({ task, users = [], max = 4 }) {
             key={id}
             title={memberLabel(id, users)}
           >
-            {memberLabel(id, users).slice(0, 2).toUpperCase()}
+            {initialsForUser(users.find((item) => item.id === id))}
           </span>
         ))}
         {extra > 0 && (

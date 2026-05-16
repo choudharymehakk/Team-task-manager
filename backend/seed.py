@@ -15,6 +15,7 @@ async def main() -> None:
         user = User(
             email=email,
             username="admin",
+            full_name="Admin User",
             hashed_password=get_password_hash("Admin123!"),
             role="admin",
         )

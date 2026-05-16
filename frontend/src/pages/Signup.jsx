@@ -8,7 +8,7 @@ import { useAuth } from "../api/hooks/useAuth.js";
 import "./Login.css";
 
 export default function Signup() {
-  const [form, setForm] = useState({ email: "", username: "", password: "", role: "member" });
+  const [form, setForm] = useState({ full_name: "", email: "", password: "", role: "member" });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,8 +22,8 @@ export default function Signup() {
   async function submit(event) {
     event.preventDefault();
     setError("");
-    if (!form.email.includes("@") || form.username.length < 3 || form.password.length < 8 || !["admin", "member"].includes(form.role)) {
-      setError("Use valid account details and choose either Admin or Member.");
+    if (!form.full_name.trim() || !form.email.includes("@") || form.password.length < 8 || !["admin", "member"].includes(form.role)) {
+      setError("Enter your full name, a valid email, an 8+ character password, and a role.");
       return;
     }
     try {
@@ -51,12 +51,12 @@ export default function Signup() {
             <p className="mt-3 text-slate-500">Launch a workspace built for real team momentum.</p>
             <div className="mt-8 grid gap-4">
               <label className="grid gap-2">
-                <span className="label-premium">Email</span>
-                <span className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input className="input-premium pl-10" type="email" value={form.email} onChange={(event) => update("email", event.target.value)} /></span>
+                <span className="label-premium">Full name</span>
+                <span className="relative"><UserRound className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input className="input-premium pl-10" value={form.full_name} onChange={(event) => update("full_name", event.target.value)} /></span>
               </label>
               <label className="grid gap-2">
-                <span className="label-premium">Username</span>
-                <span className="relative"><UserRound className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input className="input-premium pl-10" value={form.username} onChange={(event) => update("username", event.target.value)} /></span>
+                <span className="label-premium">Email</span>
+                <span className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input className="input-premium pl-10" type="email" value={form.email} onChange={(event) => update("email", event.target.value)} /></span>
               </label>
               <label className="grid gap-2">
                 <span className="label-premium">Password</span>

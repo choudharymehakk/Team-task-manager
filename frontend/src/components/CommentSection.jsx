@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { useAuth } from "../api/hooks/useAuth.js";
 import { useComments, useDeleteComment, usePostComment } from "../api/hooks/useComments.js";
 import { relativeTime } from "../utils/relativeTime.js";
+import { displayUserName } from "../utils/tasks.js";
 
-function initials(name = "User") {
+function initials(name = "Unknown User") {
   return name
     .split(/\s+/)
     .map((part) => part[0])
@@ -50,11 +51,11 @@ export default function CommentSection({ taskId }) {
         {comments.data?.map((comment) => (
           <motion.article initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-[44px_1fr] gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4" key={comment.id}>
             <div className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 text-sm font-black text-white">
-              {initials(comment.author_username)}
+              {initials(displayUserName({ full_name: comment.author_full_name, username: comment.author_username }))}
             </div>
             <div>
               <header className="flex items-center gap-2">
-                <strong className="text-slate-900">{comment.author_username || "User"}</strong>
+                <strong className="text-slate-900">{displayUserName({ full_name: comment.author_full_name, username: comment.author_username })}</strong>
                 <span className="text-xs text-slate-500">{relativeTime(comment.created_at)}</span>
                 {comment.author_id === user?.id && (
                   <button className="ml-auto grid h-8 w-8 place-items-center rounded-xl text-rose-500 hover:bg-rose-50" aria-label="Delete comment" title="Delete comment" onClick={() => remove(comment.id)}>

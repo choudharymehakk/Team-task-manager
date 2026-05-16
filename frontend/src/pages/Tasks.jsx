@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useAuth } from "../api/hooks/useAuth.js";
-import { useProjects } from "../api/hooks/useProjects.js";
+import { useAllProjectMembers, useProjects } from "../api/hooks/useProjects.js";
 import { useAllProjectTasks } from "../api/hooks/useTasks.js";
 import { useUsers } from "../api/hooks/useUsers.js";
 import AssigneeAvatars from "../components/AssigneeAvatars.jsx";
-import { assigneeIds, isAssignedTo, isDueSoon, isOverdue } from "../utils/tasks.js";
+import { assigneeIds, displayUserName, isAssignedTo, isDueSoon, isOverdue } from "../utils/tasks.js";
 
 const initialFilters = {
   query: "",
@@ -26,7 +26,8 @@ export default function Tasks() {
   const projects = useProjects();
   const { tasks, isLoading } = useAllProjectTasks(projects.data || []);
   const users = useUsers(isAdmin);
-  const userList = users.data || [];
+  const projectMembers = useAllProjectMembers(projects.data || []);
+  const userList = isAdmin ? (users.data || []) : projectMembers.members;
 
   const scopedTasks = useMemo(
     () => (isAdmin ? tasks : tasks.filter((task) => isAssignedTo(task, user?.id))),
@@ -96,7 +97,7 @@ export default function Tasks() {
           {isAdmin && (
             <select className="input-premium" value={filters.assignee} onChange={(event) => setFilter("assignee", event.target.value)}>
               <option value="all">All assignees</option>
-              {userList.map((item) => <option value={item.id} key={item.id}>{item.username}</option>)}
+              {userList.map((item) => <option value={item.id} key={item.id}>{displayUserName(item)}</option>)}
             </select>
           )}
           <select className="input-premium" value={filters.due} onChange={(event) => setFilter("due", event.target.value)}>
