@@ -3,6 +3,8 @@
 
 A full-stack project management app with JWT authentication, role-based access, projects, kanban task tracking, task comments, and dashboard metrics.
 
+##live https://task-manager-team.up.railway.app/
+
 ## Stack
 
 - Frontend: React 18, Vite, TanStack Query v5, Axios, dnd-kit, plain CSS
