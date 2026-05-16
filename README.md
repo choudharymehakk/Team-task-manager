@@ -1,3 +1,4 @@
+
 # Team Task Manager
 
 A full-stack project management app with JWT authentication, role-based access, projects, kanban task tracking, task comments, and dashboard metrics.
@@ -48,16 +49,7 @@ cp .env.example .env
 uvicorn main:app --reload
 ```
 
-Backend environment variables:
 
-```text
-MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/team_task_manager
-DATABASE_NAME=team_task_manager
-SECRET_KEY=replace-with-a-random-32-byte-hex-string
-CORS_ORIGINS=http://localhost:5173
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-REFRESH_TOKEN_EXPIRE_DAYS=7
-```
 
 Interactive API docs are available at `http://localhost:8000/docs`.
 
@@ -136,40 +128,5 @@ Dashboard:
 - Any project member can comment on tasks.
 - Users can delete only their own comments.
 
-## MongoDB Atlas Setup
 
-1. Create a free M0 MongoDB Atlas cluster.
-2. Create a database user with read/write access.
-3. In Network Access, whitelist `0.0.0.0/0` for Railway egress.
-4. Copy the connection string into `MONGO_URI`.
-5. Set `DATABASE_NAME` to `team_task_manager` or your preferred database name.
 
-## Railway Deployment
-
-Backend service:
-
-- Root directory: `backend`
-- Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-- Environment variables:
-  - `MONGO_URI`
-  - `DATABASE_NAME`
-  - `SECRET_KEY`
-  - `CORS_ORIGINS`
-  - `ACCESS_TOKEN_EXPIRE_MINUTES=30`
-  - `REFRESH_TOKEN_EXPIRE_DAYS=7`
-
-Frontend service:
-
-- Root directory: `frontend`
-- Build command: `npm run build`
-- Start command: `npx serve dist`
-- Environment variables:
-  - `VITE_API_URL=https://your-backend.up.railway.app`
-
-After both services are deployed, update backend `CORS_ORIGINS` with the public frontend Railway URL.
-
-## Architecture Notes
-
-The backend keeps authorization checks close to route handlers through reusable dependencies for current user, admin requirement, project membership, and task access. Beanie documents store MongoDB ObjectIds while response schemas serialize IDs as strings for the React app.
-
-The frontend stores the access token in React memory and the refresh token in `localStorage`. Axios attaches access tokens, refreshes once on `401`, retries the failed request, and redirects to `/login` if refresh fails.
