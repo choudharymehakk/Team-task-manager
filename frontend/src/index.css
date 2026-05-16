@@ -101,3 +101,33 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+
+.dashboard-calendar .react-calendar {
+  width: 100%;
+  border: 1px solid #E2E8F0;
+  border-radius: 18px;
+  padding: 12px;
+  font-family: inherit;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.dashboard-calendar .react-calendar__navigation button {
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+.dashboard-calendar .react-calendar__tile {
+  border-radius: 12px;
+  padding: 10px 6px;
+}
+
+.dashboard-calendar .react-calendar__tile--active {
+  background: #4F46E5;
+  color: white;
+}
+
+.dashboard-calendar .react-calendar__tile.has-deadline:not(.react-calendar__tile--active) {
+  background: #EEF2FF;
+  color: #4338CA;
+  font-weight: 800;
+}

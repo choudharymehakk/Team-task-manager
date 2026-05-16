@@ -8,7 +8,7 @@ import { useAuth } from "../api/hooks/useAuth.js";
 import "./Login.css";
 
 export default function Signup() {
-  const [form, setForm] = useState({ email: "", username: "", password: "" });
+  const [form, setForm] = useState({ email: "", username: "", password: "", role: "member" });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,13 +22,13 @@ export default function Signup() {
   async function submit(event) {
     event.preventDefault();
     setError("");
-    if (!form.email.includes("@") || form.username.length < 3 || form.password.length < 8) {
-      setError("Use a valid email, 3+ character username, and 8+ character password.");
+    if (!form.email.includes("@") || form.username.length < 3 || form.password.length < 8 || !["admin", "member"].includes(form.role)) {
+      setError("Use valid account details and choose either Admin or Member.");
       return;
     }
     try {
       setLoading(true);
-      await signup({ ...form, role: "member" });
+      await signup(form);
       toast.success("Account created successfully");
       navigate("/login");
     } catch (err) {
@@ -67,6 +67,14 @@ export default function Signup() {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </span>
+              </label>
+              <label className="grid gap-2">
+                <span className="label-premium">Role</span>
+                <select className="input-premium" value={form.role} onChange={(event) => update("role", event.target.value)}>
+                  <option value="member">Member</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <span className="text-xs text-slate-500">Admins can manage projects, users, and task assignments. Members only work on assigned tasks.</span>
               </label>
             </div>
             {error && <p className="mt-4 rounded-xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600">{error}</p>}

@@ -1,3 +1,5 @@
+import { assigneeIds } from "./tasks.js";
+
 export function deriveTaskStats(tasks = [], projects = []) {
   const completedTasks = tasks.filter((task) => task.status === "done").length;
   const pendingTasks = tasks.filter((task) => task.status !== "done").length;
@@ -15,6 +17,12 @@ export function deriveTaskStats(tasks = [], projects = []) {
     completedTasks,
     pendingTasks,
     overdueTasks,
+    dueSoonTasks: tasks.filter((task) => {
+      if (!task.due_date || task.status === "done") return false;
+      const due = new Date(`${task.due_date}T00:00:00`);
+      const diff = (due - today) / (1000 * 60 * 60 * 24);
+      return diff >= 0 && diff <= 3;
+    }).length,
     totalMembers: memberIds.length,
     byStatus: [
       { name: "Todo", value: tasks.filter((task) => task.status === "todo").length, fill: "#6366F1" },
@@ -102,12 +110,14 @@ export function getMembersFromProjects(projects = [], tasks = []) {
     const projectCount = projects.filter(
       (project) => project.owner_id === member.id || (project.member_ids || []).includes(member.id)
     ).length;
-    const assigned = tasks.filter((task) => task.assigned_to === member.id);
+    const assigned = tasks.filter((task) => assigneeIds(task).includes(member.id));
     return {
       ...member,
       projectCount,
       assignedTasks: assigned.length,
-      completedTasks: assigned.filter((task) => task.status === "done").length
+      completedTasks: assigned.filter((task) => task.status === "done").length,
+      pendingTasks: assigned.filter((task) => task.status !== "done").length,
+      completionPct: assigned.length ? Math.round((assigned.filter((task) => task.status === "done").length / assigned.length) * 100) : 0
     };
   });
 

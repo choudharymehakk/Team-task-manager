@@ -1,28 +1,59 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { FolderPlus, Plus, Search } from "lucide-react";
+import { FolderPlus, Plus, RotateCcw, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "../api/hooks/useAuth.js";
 import { useCreateProject, useProjects } from "../api/hooks/useProjects.js";
 import { useAllProjectTasks } from "../api/hooks/useTasks.js";
+import { useUsers } from "../api/hooks/useUsers.js";
 import Modal from "../components/Modal.jsx";
 import ProjectCard from "../components/ProjectCard.jsx";
 import { projectProgress } from "../utils/analytics.js";
+import { assigneeIds, isDueSoon, isOverdue } from "../utils/tasks.js";
+
+const initialFilters = {
+  query: "",
+  status: "all",
+  priority: "all",
+  assignee: "all",
+  due: "all"
+};
 
 export default function Projects() {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState(initialFilters);
   const [form, setForm] = useState({ name: "", description: "" });
   const { user } = useAuth();
   const projects = useProjects();
   const { tasks } = useAllProjectTasks(projects.data || []);
+  const users = useUsers(user?.role === "admin");
   const createProject = useCreateProject();
 
-  const filtered = useMemo(
-    () => (projects.data || []).filter((project) => project.name.toLowerCase().includes(query.toLowerCase())),
-    [projects.data, query]
-  );
+  const filtered = useMemo(() => {
+    const query = filters.query.trim().toLowerCase();
+    return (projects.data || []).filter((project) => {
+      const projectTasks = tasks.filter((task) => task.project_id === project.id);
+      const matchesSearch = !query ||
+        project.name.toLowerCase().includes(query) ||
+        (project.description || "").toLowerCase().includes(query);
+      const matchesStatus = filters.status === "all" || projectTasks.some((task) => task.status === filters.status);
+      const matchesPriority = filters.priority === "all" || projectTasks.some((task) => task.priority === filters.priority);
+      const matchesAssignee = filters.assignee === "all" || projectTasks.some((task) => assigneeIds(task).includes(filters.assignee));
+      const matchesDue =
+        filters.due === "all" ||
+        projectTasks.some((task) =>
+          (filters.due === "overdue" && isOverdue(task)) ||
+          (filters.due === "due_soon" && isDueSoon(task)) ||
+          (filters.due === "no_due" && !task.due_date)
+        );
+      return matchesSearch && matchesStatus && matchesPriority && matchesAssignee && matchesDue;
+    });
+  }, [projects.data, tasks, filters]);
+
+  function setFilter(key, value) {
+    setFilters((current) => ({ ...current, [key]: value }));
+  }
 
   async function submit(event) {
     event.preventDefault();
@@ -45,12 +76,41 @@ export default function Projects() {
         )}
       </div>
 
-      <div className="mt-6 flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-card backdrop-blur sm:flex-row sm:items-center">
-        <div className="relative flex-1">
+      <div className="mt-6 rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-card backdrop-blur">
+        <div className="grid gap-3 lg:grid-cols-[1.4fr_repeat(4,minmax(0,0.8fr))_auto]">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <input className="input-premium pl-10" placeholder="Search projects..." value={query} onChange={(event) => setQuery(event.target.value)} />
+          <input className="input-premium pl-10" placeholder="Search projects..." value={filters.query} onChange={(event) => setFilter("query", event.target.value)} />
         </div>
-        <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-600">{filtered.length} projects</span>
+        <select className="input-premium" value={filters.status} onChange={(event) => setFilter("status", event.target.value)}>
+          <option value="all">Any status</option>
+          <option value="todo">Todo tasks</option>
+          <option value="in_progress">In progress tasks</option>
+          <option value="done">Done tasks</option>
+        </select>
+        <select className="input-premium" value={filters.priority} onChange={(event) => setFilter("priority", event.target.value)}>
+          <option value="all">Any priority</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+        {user?.role === "admin" && (
+          <select className="input-premium" value={filters.assignee} onChange={(event) => setFilter("assignee", event.target.value)}>
+            <option value="all">Any assignee</option>
+            {(users.data || []).map((item) => <option value={item.id} key={item.id}>{item.username}</option>)}
+          </select>
+        )}
+        <select className="input-premium" value={filters.due} onChange={(event) => setFilter("due", event.target.value)}>
+          <option value="all">Any due date</option>
+          <option value="overdue">Overdue</option>
+          <option value="due_soon">Due soon</option>
+          <option value="no_due">No due date</option>
+        </select>
+        <button className="btn-secondary" type="button" onClick={() => setFilters(initialFilters)}>
+          <RotateCcw size={17} />Reset
+        </button>
+        </div>
+        <p className="mt-3 text-sm font-semibold text-slate-500">{filtered.length} project{filtered.length === 1 ? "" : "s"} shown</p>
       </div>
 
       <section className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">

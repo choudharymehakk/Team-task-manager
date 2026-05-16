@@ -2,15 +2,18 @@ import { motion } from "framer-motion";
 import { CalendarDays, GripVertical } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import AssigneeAvatars from "./AssigneeAvatars.jsx";
+import { isDueSoon, isOverdue } from "../utils/tasks.js";
+
 const priorityStyles = {
   high: "bg-rose-50 text-rose-700 ring-rose-200",
   medium: "bg-amber-50 text-amber-700 ring-amber-200",
   low: "bg-emerald-50 text-emerald-700 ring-emerald-200"
 };
 
-export default function TaskCard({ task, listeners, attributes, setNodeRef, style }) {
-  const due = task.due_date ? new Date(`${task.due_date}T00:00:00`) : null;
-  const overdue = due && due < new Date() && task.status !== "done";
+export default function TaskCard({ task, users = [], listeners, attributes, setNodeRef, style }) {
+  const overdue = isOverdue(task);
+  const dueSoon = isDueSoon(task);
   return (
     <motion.article
       whileHover={{ y: -3 }}
@@ -38,10 +41,15 @@ export default function TaskCard({ task, listeners, attributes, setNodeRef, styl
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold capitalize text-slate-600">{task.status.replace("_", " ")}</span>
           {task.due_date && (
-            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${overdue ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-600"}`}>
-              <CalendarDays size={13} /> {task.due_date}
+            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${
+              overdue ? "bg-rose-50 text-rose-700" : dueSoon ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-600"
+            }`}>
+              <CalendarDays size={13} /> {overdue ? "Overdue" : dueSoon ? "Due soon" : task.due_date}
             </span>
           )}
+        </div>
+        <div className="mt-4">
+          <AssigneeAvatars task={task} users={users} />
         </div>
       </Link>
     </motion.article>

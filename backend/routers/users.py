@@ -54,7 +54,7 @@ async def delete_user(user_id: str, current_user: User = Depends(require_admin))
 
     assigned_tasks = await Task.find(Task.assigned_to == object_id).to_list()
     for task in assigned_tasks:
-        task.assigned_to = None
+        task.assigned_to = [assignee for assignee in (task.assigned_to or []) if str(assignee) != str(object_id)]
         await task.save()
 
     await Comment.find(Comment.author_id == object_id).delete()

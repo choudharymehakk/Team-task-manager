@@ -8,6 +8,8 @@ import { useAuth } from "../api/hooks/useAuth.js";
 import { useProjectMembers } from "../api/hooks/useProjects.js";
 import { useDeleteTask, useTask, useUpdateTask } from "../api/hooks/useTasks.js";
 import CommentSection from "../components/CommentSection.jsx";
+import AssigneeAvatars from "../components/AssigneeAvatars.jsx";
+import { assigneeIds } from "../utils/tasks.js";
 
 export default function TaskDetail() {
   const { id } = useParams();
@@ -26,7 +28,7 @@ export default function TaskDetail() {
         description: task.data.description,
         status: task.data.status,
         priority: task.data.priority,
-        assigned_to: task.data.assigned_to || "",
+        assigned_to: assigneeIds(task.data),
         due_date: task.data.due_date || ""
       });
     }
@@ -42,7 +44,7 @@ export default function TaskDetail() {
 
   async function submit(event) {
     event.preventDefault();
-    const payload = user?.role === "admin" ? { ...form, assigned_to: form.assigned_to || null, due_date: form.due_date || null } : { status: form.status };
+    const payload = user?.role === "admin" ? { ...form, due_date: form.due_date || null } : { status: form.status };
     await updateTask.mutateAsync({ id, payload });
     toast.success("Task updated successfully");
   }
@@ -64,6 +66,9 @@ export default function TaskDetail() {
             <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold capitalize text-indigo-100">{task.data.status.replace("_", " ")}</span>
             <h1 className="mt-4 text-4xl font-black">{task.data.title}</h1>
             <p className="mt-2 text-slate-300">Edit task details, update progress, and keep discussion close to the work.</p>
+            <div className="mt-4 inline-flex rounded-2xl bg-white/10 p-3">
+              <AssigneeAvatars task={task.data} users={members.data || []} />
+            </div>
           </div>
           {user?.role === "admin" && (
             <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/20 transition hover:bg-rose-600" onClick={remove}>
@@ -98,13 +103,21 @@ export default function TaskDetail() {
           {user?.role === "admin" && (
             <>
               <label className="grid gap-2">
-                <span className="label-premium">Assigned member</span>
-                <select className="input-premium" value={form.assigned_to} onChange={(event) => setForm({ ...form, assigned_to: event.target.value })}>
-                  <option value="">Unassigned</option>
+                <span className="label-premium">Assigned members</span>
+                <select
+                  className="min-h-28 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-brand-500 focus:ring-4 focus:ring-indigo-100"
+                  multiple
+                  value={form.assigned_to}
+                  onChange={(event) => setForm({
+                    ...form,
+                    assigned_to: Array.from(event.target.selectedOptions).map((option) => option.value)
+                  })}
+                >
                   {members.data?.map((member) => (
                     <option value={member.id} key={member.id}>{member.username}</option>
                   ))}
                 </select>
+                <span className="text-xs text-slate-500">Hold Ctrl or Cmd to select multiple members.</span>
               </label>
               <label className="grid gap-2">
                 <span className="label-premium">Priority</span>

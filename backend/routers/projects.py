@@ -116,7 +116,7 @@ async def remove_member(
     project.member_ids = [member_id for member_id in project.member_ids if str(member_id) != str(object_id)]
     tasks = await Task.find(Task.project_id == project.id, Task.assigned_to == object_id).to_list()
     for task in tasks:
-        task.assigned_to = None
+        task.assigned_to = [assignee for assignee in (task.assigned_to or []) if str(assignee) != str(object_id)]
         await task.save()
     await project.save()
     return project

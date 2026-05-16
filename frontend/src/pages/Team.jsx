@@ -9,11 +9,17 @@ import { useAllProjectTasks } from "../api/hooks/useTasks.js";
 import { useCreateUser, useDeleteUser, useUsers } from "../api/hooks/useUsers.js";
 import Modal from "../components/Modal.jsx";
 import { getMembersFromProjects, shortMemberLabel } from "../utils/analytics.js";
+import { assigneeIds } from "../utils/tasks.js";
 
 function userStats(userId, projects, tasks) {
+  const assigned = tasks.filter((task) => assigneeIds(task).includes(userId));
+  const completed = assigned.filter((task) => task.status === "done").length;
   return {
     projectCount: projects.filter((project) => project.owner_id === userId || (project.member_ids || []).includes(userId)).length,
-    assignedTasks: tasks.filter((task) => task.assigned_to === userId).length
+    assignedTasks: assigned.length,
+    completedTasks: completed,
+    pendingTasks: assigned.length - completed,
+    completionPct: assigned.length ? Math.round((completed / assigned.length) * 100) : 0
   };
 }
 
@@ -44,7 +50,10 @@ export default function Team() {
       role: item.role.toLowerCase(),
       displayName: item.displayName,
       projectCount: item.projectCount,
-      assignedTasks: item.assignedTasks
+      assignedTasks: item.assignedTasks,
+      completedTasks: item.completedTasks,
+      pendingTasks: item.pendingTasks,
+      completionPct: item.completionPct
     }));
   }, [isAdmin, users.data, projects.data, tasks]);
 
@@ -99,18 +108,31 @@ export default function Team() {
                   <p className="truncate text-xs text-slate-500">{item.email}</p>
                 </div>
               </div>
-              <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${item.role === "admin" || item.role === "Owner" ? "bg-indigo-50 text-indigo-700" : "bg-slate-100 text-slate-600"}`}>
+              <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${item.role === "admin" || item.role === "owner" ? "bg-indigo-50 text-indigo-700" : "bg-slate-100 text-slate-600"}`}>
                 {item.role}
               </span>
             </div>
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="mt-6 grid grid-cols-3 gap-3">
               <div className="rounded-2xl bg-slate-50 p-3">
                 <p className="text-xs text-slate-500">Projects</p>
                 <p className="text-2xl font-black">{item.projectCount}</p>
               </div>
               <div className="rounded-2xl bg-slate-50 p-3">
-                <p className="text-xs text-slate-500">Assigned tasks</p>
+                <p className="text-xs text-slate-500">Assigned</p>
                 <p className="text-2xl font-black">{item.assignedTasks}</p>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <p className="text-xs text-slate-500">Done</p>
+                <p className="text-2xl font-black">{item.completedTasks}</p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="mb-2 flex justify-between text-sm">
+                <span className="font-semibold text-slate-600">{item.pendingTasks} pending</span>
+                <strong>{item.completionPct}%</strong>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full rounded-full bg-indigo-600" style={{ width: `${item.completionPct}%` }} />
               </div>
             </div>
             {isAdmin && item.id !== user?.id && (

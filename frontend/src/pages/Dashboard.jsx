@@ -1,5 +1,8 @@
 import { motion } from "framer-motion";
 import { AlertTriangle, CheckCircle2, Clock, FolderKanban, ListTodo, Plus, Users } from "lucide-react";
+import { useMemo, useState } from "react";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 import {
   Bar,
   BarChart,
@@ -17,6 +20,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../api/hooks/useAuth.js";
 import { useProjects } from "../api/hooks/useProjects.js";
 import { useAllProjectTasks } from "../api/hooks/useTasks.js";
+import { useUsers } from "../api/hooks/useUsers.js";
 import {
   deriveTaskStats,
   getMembersFromProjects,
@@ -25,6 +29,7 @@ import {
   upcomingDeadlines
 } from "../utils/analytics.js";
 import { relativeTime } from "../utils/relativeTime.js";
+import { assigneeIds, isDueSoon } from "../utils/tasks.js";
 
 function EmptyState({ icon: Icon, title, body }) {
   return (
@@ -70,17 +75,59 @@ function SkeletonDashboard() {
   );
 }
 
+function dateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const projectsQuery = useProjects();
   const projects = projectsQuery.data || [];
   const { tasks, isLoading } = useAllProjectTasks(projects);
+  const users = useUsers(user?.role === "admin");
   const stats = deriveTaskStats(tasks, projects);
   const projectBars = projectChartData(projects, tasks);
-  const members = getMembersFromProjects(projects, tasks);
   const deadlines = upcomingDeadlines(tasks);
+  const dueSoonTasks = tasks.filter((task) => isDueSoon(task));
   const activity = user?.role === "admin" ? recentActivity(projects, tasks) : recentActivity([], tasks);
   const isAdmin = user?.role === "admin";
+  const deadlineDates = new Set(tasks.filter((task) => task.due_date).map((task) => task.due_date));
+  const selectedDateKey = dateKey(selectedDate);
+  const selectedDateTasks = tasks.filter((task) => task.due_date === selectedDateKey);
+  const memberPerformance = useMemo(() => {
+    if (!isAdmin) return [];
+    const knownMembers = getMembersFromProjects(projects, tasks);
+    const base = users.data?.length
+      ? users.data.map((item) => ({
+          id: item.id,
+          displayName: item.username,
+          email: item.email,
+          role: item.role
+        }))
+      : knownMembers.map((item) => ({
+          id: item.id,
+          displayName: item.displayName,
+          email: item.id,
+          role: item.role
+        }));
+
+    return base.map((member) => {
+      const assigned = tasks.filter((task) => assigneeIds(task).includes(member.id));
+      const completed = assigned.filter((task) => task.status === "done").length;
+      const pending = assigned.length - completed;
+      return {
+        ...member,
+        assignedTasks: assigned.length,
+        completedTasks: completed,
+        pendingTasks: pending,
+        completionPct: assigned.length ? Math.round((completed / assigned.length) * 100) : 0
+      };
+    }).sort((a, b) => b.assignedTasks - a.assignedTasks || a.displayName.localeCompare(b.displayName));
+  }, [isAdmin, users.data, projects, tasks]);
 
   if (projectsQuery.isLoading || isLoading) return <SkeletonDashboard />;
 
@@ -106,13 +153,20 @@ export default function Dashboard() {
         <StatCard icon={ListTodo} label="Tasks" value={stats.totalTasks} tone="slate" />
         <StatCard icon={CheckCircle2} label="Completed" value={stats.completedTasks} tone="emerald" />
         <StatCard icon={Clock} label="Pending" value={stats.pendingTasks} tone="amber" />
-        {isAdmin && <StatCard icon={Users} label="Members" value={stats.totalMembers} tone="indigo" />}
+        {isAdmin && <StatCard icon={Users} label="Members" value={users.data?.length ?? stats.totalMembers} tone="indigo" />}
       </section>
 
       {stats.overdueTasks > 0 && (
         <div className="mt-4 flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-700">
           <AlertTriangle size={20} />
           <p className="font-semibold">{stats.overdueTasks} overdue task{stats.overdueTasks === 1 ? "" : "s"} need attention.</p>
+        </div>
+      )}
+
+      {dueSoonTasks.length > 0 && (
+        <div className="mt-4 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
+          <Clock size={20} />
+          <p className="font-semibold">{dueSoonTasks.length} task{dueSoonTasks.length === 1 ? "" : "s"} due within 3 days.</p>
         </div>
       )}
 
@@ -189,6 +243,29 @@ export default function Dashboard() {
         </article>
 
         <article className="premium-card p-5">
+          <h2 className="text-xl font-black">Deadline calendar</h2>
+          <p className="mt-1 text-sm text-slate-500">Dates with assigned task deadlines are highlighted.</p>
+          <div className="mt-5 dashboard-calendar">
+            <Calendar
+              value={selectedDate}
+              onChange={setSelectedDate}
+              tileClassName={({ date, view }) => {
+                if (view !== "month") return "";
+                return deadlineDates.has(dateKey(date)) ? "has-deadline" : "";
+              }}
+            />
+          </div>
+          <div className="mt-4 grid gap-2">
+            {selectedDateTasks.length ? selectedDateTasks.map((task) => (
+              <Link className="rounded-xl bg-slate-50 p-3 text-sm transition hover:bg-indigo-50" to={`/tasks/${task.id}`} key={task.id}>
+                <p className="font-bold text-slate-900">{task.title}</p>
+                <p className="text-xs text-slate-500">{task.project_name}</p>
+              </Link>
+            )) : <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-500">No tasks due on this date.</p>}
+          </div>
+        </article>
+
+        <article className="premium-card p-5">
           <h2 className="text-xl font-black">Recent activity</h2>
           <div className="mt-5 grid gap-3">
             {activity.length ? activity.map((item) => (
@@ -201,23 +278,61 @@ export default function Dashboard() {
           </div>
         </article>
 
-        {isAdmin && (
-          <article className="premium-card p-5">
-            <h2 className="text-xl font-black">Team overview</h2>
-            <div className="mt-5 grid gap-3">
-              {members.length ? members.slice(0, 5).map((member) => (
-                <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3" key={member.id}>
-                  <span className="grid h-10 w-10 place-items-center rounded-full bg-slate-900 text-xs font-black text-white">{member.displayName.slice(-2)}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-bold text-slate-900">{member.displayName}</p>
-                    <p className="text-xs text-slate-500">{member.assignedTasks} assigned, {member.completedTasks} completed</p>
+      </section>
+
+      {isAdmin && (
+        <section className="premium-card mt-6 p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-xl font-black">Team overview</h2>
+              <p className="text-sm text-slate-500">Assigned, completed, pending, and completion rate by member.</p>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {memberPerformance.length ? memberPerformance.map((member) => (
+              <article className="rounded-2xl border border-slate-200 bg-white p-4" key={member.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-slate-950 text-xs font-black text-white">
+                      {member.displayName.slice(0, 2).toUpperCase()}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate font-black text-slate-950">{member.displayName}</p>
+                      <p className="truncate text-xs text-slate-500">{member.email}</p>
+                    </div>
+                  </div>
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-bold capitalize ${member.role === "admin" ? "bg-indigo-50 text-indigo-700" : "bg-slate-100 text-slate-600"}`}>
+                    {member.role}
+                  </span>
+                </div>
+                <div className="mt-5 grid grid-cols-3 gap-2">
+                  <div className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500">Assigned</p>
+                    <p className="text-xl font-black">{member.assignedTasks}</p>
+                  </div>
+                  <div className="rounded-xl bg-emerald-50 p-3">
+                    <p className="text-xs text-emerald-700">Done</p>
+                    <p className="text-xl font-black text-emerald-700">{member.completedTasks}</p>
+                  </div>
+                  <div className="rounded-xl bg-amber-50 p-3">
+                    <p className="text-xs text-amber-700">Pending</p>
+                    <p className="text-xl font-black text-amber-700">{member.pendingTasks}</p>
                   </div>
                 </div>
-              )) : <EmptyState icon={Users} title="No team members yet" body="Members appear after they are added to projects." />}
-            </div>
-          </article>
-        )}
-      </section>
+                <div className="mt-4">
+                  <div className="mb-2 flex justify-between text-sm">
+                    <span className="font-semibold text-slate-600">Completion</span>
+                    <strong>{member.completionPct}%</strong>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-full rounded-full bg-indigo-600" style={{ width: `${member.completionPct}%` }} />
+                  </div>
+                </div>
+              </article>
+            )) : <EmptyState icon={Users} title="No team members yet" body="Members appear after they are added to projects or users are created." />}
+          </div>
+        </section>
+      )}
     </main>
   );
 }

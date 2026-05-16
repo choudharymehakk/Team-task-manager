@@ -10,12 +10,13 @@ import { useCreateTask, useProjectTasks, useUpdateTask } from "../api/hooks/useT
 import KanbanBoard from "../components/KanbanBoard.jsx";
 import Modal from "../components/Modal.jsx";
 import { projectProgress, shortMemberLabel } from "../utils/analytics.js";
+import { assigneeIds } from "../utils/tasks.js";
 
 export default function ProjectDetail() {
   const { id } = useParams();
   const [taskOpen, setTaskOpen] = useState(false);
   const [memberEmail, setMemberEmail] = useState("");
-  const [taskForm, setTaskForm] = useState({ title: "", description: "", priority: "medium", due_date: "", assigned_to: "" });
+  const [taskForm, setTaskForm] = useState({ title: "", description: "", priority: "medium", due_date: "", assigned_to: [] });
   const { user } = useAuth();
   const project = useProject(id);
   const tasks = useProjectTasks(id);
@@ -28,10 +29,10 @@ export default function ProjectDetail() {
 
   async function submitTask(event) {
     event.preventDefault();
-    const payload = { ...taskForm, due_date: taskForm.due_date || null, assigned_to: taskForm.assigned_to || null };
+    const payload = { ...taskForm, due_date: taskForm.due_date || null };
     await createTask.mutateAsync(payload);
     toast.success("Task created successfully");
-    setTaskForm({ title: "", description: "", priority: "medium", due_date: "", assigned_to: "" });
+    setTaskForm({ title: "", description: "", priority: "medium", due_date: "", assigned_to: [] });
     setTaskOpen(false);
   }
 
@@ -53,7 +54,7 @@ export default function ProjectDetail() {
   }
 
   function assignedCount(userId) {
-    return (tasks.data || []).filter((task) => task.assigned_to === userId).length;
+    return (tasks.data || []).filter((task) => assigneeIds(task).includes(userId)).length;
   }
 
   return (
@@ -141,7 +142,7 @@ export default function ProjectDetail() {
             <Users size={16} /> {members.data?.length || 0} collaborators
           </div>
         </div>
-        <KanbanBoard tasks={tasks.data || []} onStatusChange={moveTask} />
+        <KanbanBoard tasks={tasks.data || []} users={members.data || []} onStatusChange={moveTask} />
       </section>
 
       {taskOpen && (
@@ -157,13 +158,21 @@ export default function ProjectDetail() {
             </label>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="grid gap-2 sm:col-span-2">
-                <span className="label-premium">Assign to</span>
-                <select className="input-premium" value={taskForm.assigned_to} onChange={(event) => setTaskForm({ ...taskForm, assigned_to: event.target.value })}>
-                  <option value="">Unassigned</option>
+                <span className="label-premium">Assign members</span>
+                <select
+                  className="min-h-28 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-brand-500 focus:ring-4 focus:ring-indigo-100"
+                  multiple
+                  value={taskForm.assigned_to}
+                  onChange={(event) => setTaskForm({
+                    ...taskForm,
+                    assigned_to: Array.from(event.target.selectedOptions).map((option) => option.value)
+                  })}
+                >
                   {members.data?.map((member) => (
                     <option value={member.id} key={member.id}>{member.username} ({member.email})</option>
                   ))}
                 </select>
+                <span className="text-xs text-slate-500">Hold Ctrl or Cmd to select multiple members.</span>
               </label>
               <label className="grid gap-2">
                 <span className="label-premium">Priority</span>
